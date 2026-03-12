@@ -1,4 +1,5 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTreeView, QListView, QFileSystemModel, QSplitter
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTreeView, QListView, QSplitter
+from PyQt6.QtGui import QFileSystemModel
 from PyQt6.QtCore import Qt, QDir
 
 class LibraryTab(QWidget):
