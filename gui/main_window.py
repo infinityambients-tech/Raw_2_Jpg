@@ -69,6 +69,8 @@ class MainWindow(QMainWindow):
         # Connect Signals
         self.library_tab.file_list.clicked.connect(self.handle_file_selected)
         self.convert_tab.btn_start.clicked.connect(self.start_conversion)
+        self.convert_tab.btn_add.clicked.connect(self.add_folder_to_queue)
+        self.convert_tab.btn_clear.clicked.connect(self.clear_queue)
         
         # Status Bar
         self.status_bar = QStatusBar()
@@ -91,27 +93,40 @@ class MainWindow(QMainWindow):
             # Update Metadata
             metadata = get_metadata(path)
             self.preview_tab.update_metadata(metadata)
-            
-            # Switch to Preview tab optionally or just let user click
-            # self.tabs.setCurrentWidget(self.preview_tab)
+
+    def add_folder_to_queue(self):
+        from PyQt6.QtWidgets import QFileDialog
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder with RAW files")
+        if folder:
+            from core.raw_scanner import scan_directory
+            files = scan_directory(folder)
+            for file in files:
+                self.convert_tab.file_list.addItem(file)
+            self.status_label_files.setText(f"Files: {self.convert_tab.file_list.count()}")
+            self.status_bar.showMessage(f"Added {len(files)} files to queue.")
+
+    def clear_queue(self):
+        self.convert_tab.file_list.clear()
+        self.status_label_files.setText("Files: 0")
+        self.status_bar.showMessage("Queue cleared.")
 
     def start_conversion(self):
         # Gather info from UI
         quality = self.convert_tab.quality_spin.value()
         resize = (1920, 1080) if self.convert_tab.resize_check.isChecked() else None
         
-        # For demo, we'll convert files currently in the folder selected in Library
-        folder_path = self.library_tab.file_model.rootPath()
+        # Get files from Queue List
         files = []
-        for i in range(self.library_tab.file_model.rowCount(self.library_tab.file_list.rootIndex())):
-            index = self.library_tab.file_model.index(i, 0, self.library_tab.file_list.rootIndex())
-            files.append(self.library_tab.file_model.filePath(index))
+        for i in range(self.convert_tab.file_list.count()):
+            files.append(self.convert_tab.file_list.item(i).text())
         
         if not files:
-            self.status_bar.showMessage("No files to convert!")
+            self.status_bar.showMessage("No files in queue! Use 'Add Folder' or select from Library.")
             return
             
-        output_dir = self.settings_tab.path_input.text() or folder_path
+        output_dir = self.settings_tab.path_input.text() or os.path.join(os.path.dirname(files[0]), "Export")
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
         
         # Start Worker
         self.worker = ConversionWorker(files, output_dir, quality, resize)

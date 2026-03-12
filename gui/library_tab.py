@@ -32,6 +32,7 @@ class LibraryTab(QWidget):
         # Only show supported RAW files (we'll set filtering in on_folder_selected)
         
         self.file_list.clicked.connect(self.on_file_selected)
+        self.file_list.doubleClicked.connect(self.on_file_double_clicked)
         
         self.splitter.addWidget(self.folder_tree)
         self.splitter.addWidget(self.file_list)
@@ -49,7 +50,10 @@ class LibraryTab(QWidget):
         self.file_model.setNameFilterDisables(False)
 
     def on_file_selected(self, index):
+        # Preview update is handled by MainWindow connection
+        pass
+
+    def on_file_double_clicked(self, index):
         path = self.file_model.filePath(index)
-        if hasattr(self.main_window, 'preview_tab'):
-            # Emit signal or call method to update preview
-            pass
+        if hasattr(self.main_window, 'add_file_to_queue'):
+            self.main_window.add_file_to_queue(path)
